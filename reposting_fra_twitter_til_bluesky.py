@@ -1,3 +1,4 @@
+import os
 import tweepy
 from datetime import datetime, timezone
 from atproto import Client
