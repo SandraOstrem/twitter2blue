@@ -18,7 +18,8 @@ bluesky_username = os.getenv("BLUESKY_USERNAME")   # Bluesky Username
 bluesky_password = os.getenv("BLUESKY_PASSWORD")   # Bluesky Password
 
 # Target Twitter account to monitor
-twitter_account = "Valerengaoslo"
+twitter_account = "valerengaoslo"
+last_tweet_id_file = "last_tweet.txt"
 
 # Connect to Twitter API using the Bearer Token
 def get_twitter_client():
@@ -52,7 +53,6 @@ def post_to_bluesky(client, message):
 
 # Function to expand shortened t.co links in tweet text
 def expand_tco_links(text):
-    print("[DEBUG] Expanding t.co links...")
     tco_links = re.findall(r'https://t.co/\w+', text)
     for tco_link in tco_links:
         try:
@@ -66,7 +66,6 @@ def expand_tco_links(text):
 
 # Function to clean up tweet text for Bluesky
 def clean_tweet_text(text):
-    print("[DEBUG] Cleaning tweet text...")
     text = expand_tco_links(text)
     cleaned_text = re.sub(r'https://t.co/\w+', '', text).strip()
     if not cleaned_text:
@@ -80,61 +79,40 @@ def get_latest_tweet(twitter_client, screen_name):
     try:
         user = twitter_client.get_user(username=screen_name)
         user_id = user.data.id
-
-        # Fetch the latest tweet from the user
         tweets = twitter_client.get_users_tweets(user_id, max_results=5, tweet_fields=["created_at", "text"])
-        
         if tweets and tweets.data:
-            tweet = tweets.data[0]  # Get the latest tweet
+            tweet = tweets.data[0]
             print(f"[DEBUG] Latest tweet text: '{tweet.text}'")
             return tweet.text, tweet.id
-    except tweepy.TooManyRequests as e:
-        print("Rate limit reached. Exiting until next scheduled run.")
-        return None, None
     except Exception as e:
         print(f"Error fetching tweets: {e}")
-    return None, None  # No new tweet or an error occurred
+    return None, None
 
-# Function to get the latest post text on Bluesky
-def get_latest_bluesky_post(client):
-    print("[DEBUG] Fetching latest Bluesky post...")
+# Function to read the last posted tweet ID from a file
+def read_last_tweet_id():
     try:
-        # No need for params={}, directly pass repo and collection
-        posts = client.com.atproto.repo.list_records(
-            repo=client.me.did,
-            collection="app.bsky.feed.post",
-            limit=1
-        )
-        if posts and posts.records:
-            latest_post = posts.records[0]
-            print(f"[DEBUG] Latest Bluesky post text: '{latest_post.value.text}'")
-            return latest_post.value.text
-        else:
-            print("[DEBUG] No posts found on Bluesky.")
-    except Exception as e:
-        print(f"Error fetching latest Bluesky post: {e}")
-    return None
+        with open(last_tweet_id_file, "r") as file:
+            return file.read().strip()
+    except FileNotFoundError:
+        return None
+
+# Function to save the last posted tweet ID to a file
+def save_last_tweet_id(tweet_id):
+    with open(last_tweet_id_file, "w") as file:
+        file.write(str(tweet_id))
 
 # Main function to monitor Twitter and repost on Bluesky
 def monitor_twitter_and_repost():
-    print("[DEBUG] Starting script...")
     twitter_client = get_twitter_client()
     bluesky_client = authenticate_bluesky(bluesky_username, bluesky_password)
+    last_checked_id = read_last_tweet_id()
 
-    # Retrieve the latest tweet and clean its text
     tweet_content, tweet_id = get_latest_tweet(twitter_client, twitter_account)
-    if tweet_content:
+    if tweet_content and tweet_id != last_checked_id:
         cleaned_tweet_text = clean_tweet_text(tweet_content)
-        
-        # Retrieve the latest Bluesky post text
-        latest_bluesky_post_text = get_latest_bluesky_post(bluesky_client)
-
-        # Compare tweet content with the latest Bluesky post
-        if cleaned_tweet_text != latest_bluesky_post_text:
-            print("New tweet found, posting to Bluesky.")
-            post_to_bluesky(bluesky_client, cleaned_tweet_text)
-        else:
-            print("Latest tweet matches the latest Bluesky post. No repost needed.")
+        print(f"New tweet found: {cleaned_tweet_text}")
+        post_to_bluesky(bluesky_client, cleaned_tweet_text)
+        save_last_tweet_id(tweet_id)
     else:
         print("No new tweets found or already posted.")
 
