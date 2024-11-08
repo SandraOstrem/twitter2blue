@@ -1,0 +1,32 @@
+name: Repost Tweets to Bluesky
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"  # Runs every 15 minutes
+  workflow_dispatch:        # Allows manual triggering of the workflow
+
+jobs:
+  repost:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install tweepy atproto requests
+
+      - name: Run reposting script
+        env:
+          BEARER_TOKEN: ${{ secrets.TWITTER_BEARER_TOKEN }}
+          BLUESKY_USERNAME: ${{ secrets.BLUESKY_USERNAME }}
+          BLUESKY_PASSWORD: ${{ secrets.BLUESKY_PASSWORD }}
+        run: |
+          python reposting_fra_twitter_til_bluesky.py
