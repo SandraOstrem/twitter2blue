@@ -5,7 +5,8 @@ from atproto import Client
 import re
 import requests
 import warnings
-import sysimport time
+import sys
+import time
 
 # Set default encoding to UTF-8 for Windows environments
 sys.stdout.reconfigure(encoding='utf-8')
