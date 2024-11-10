@@ -5,13 +5,29 @@ from atproto import Client
 import re
 import requests
 import warnings
-import sys
+import sysimport time
 
 # Set default encoding to UTF-8 for Windows environments
 sys.stdout.reconfigure(encoding='utf-8')
 
 # Suppress warnings
 warnings.filterwarnings("ignore")
+
+def authenticate_bluesky(username, password):
+    print("[DEBUG] Authenticating with Bluesky...")
+    client = Client()
+    try:
+        client.login(username, password)
+        print("[DEBUG] Bluesky authentication successful.")
+        return client
+    except Exception as e:
+        if "RateLimitExceeded" in str(e):
+            print("[ERROR] Rate limit exceeded. Waiting for reset...")
+            time.sleep(3600)  # Wait for 1 hour before retrying (adjust as necessary)
+            return authenticate_bluesky(username, password)
+        else:
+            print("[ERROR] Failed to authenticate with Bluesky:", e)
+            raise
 
 # Retrieve sensitive information from environment variables
 bearer_token = os.getenv("BEARER_TOKEN")           # Twitter Bearer Token
