@@ -14,6 +14,8 @@ sys.stdout.reconfigure(encoding='utf-8')
 # Suppress warnings
 warnings.filterwarnings("ignore")
 
+import sys
+
 def authenticate_bluesky(username, password):
     print("[DEBUG] Authenticating with Bluesky...")
     client = Client()
@@ -23,12 +25,12 @@ def authenticate_bluesky(username, password):
         return client
     except Exception as e:
         if "RateLimitExceeded" in str(e):
-            print("[ERROR] Rate limit exceeded. Waiting for reset...")
-            time.sleep(3600)  # Wait for 1 hour before retrying (adjust as necessary)
-            return authenticate_bluesky(username, password)
+            print("[ERROR] Rate limit exceeded. Exiting and will retry on next scheduled run.")
+            sys.exit(1)  # Exit the script
         else:
             print("[ERROR] Failed to authenticate with Bluesky:", e)
             raise
+
 
 # Retrieve sensitive information from environment variables
 bearer_token = os.getenv("BEARER_TOKEN")           # Twitter Bearer Token
