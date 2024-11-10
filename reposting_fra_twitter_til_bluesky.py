@@ -6,15 +6,12 @@ import re
 import requests
 import warnings
 import sys
-import time
 
 # Set default encoding to UTF-8 for Windows environments
 sys.stdout.reconfigure(encoding='utf-8')
 
 # Suppress warnings
 warnings.filterwarnings("ignore")
-
-import sys
 
 def authenticate_bluesky(username, password):
     print("[DEBUG] Authenticating with Bluesky...")
@@ -31,7 +28,6 @@ def authenticate_bluesky(username, password):
             print("[ERROR] Failed to authenticate with Bluesky:", e)
             raise
 
-
 # Retrieve sensitive information from environment variables
 bearer_token = os.getenv("BEARER_TOKEN")           # Twitter Bearer Token
 bluesky_username = os.getenv("BLUESKY_USERNAME")   # Bluesky Username
@@ -45,14 +41,6 @@ last_tweet_id_file = "last_tweet.txt"
 def get_twitter_client():
     print("[DEBUG] Initializing Twitter client...")
     return tweepy.Client(bearer_token=bearer_token)
-
-# Authenticate with Bluesky
-def authenticate_bluesky(username, password):
-    print("[DEBUG] Authenticating with Bluesky...")
-    client = Client()
-    client.login(username, password)
-    print("[DEBUG] Bluesky authentication successful.")
-    return client
 
 # Function to create a post on Bluesky
 def post_to_bluesky(client, message):
@@ -111,14 +99,14 @@ def get_latest_tweet(twitter_client, screen_name):
 # Function to read the last posted tweet ID from a file
 def read_last_tweet_id():
     try:
-        with open(last_tweet_id_file, "r") as file:
+        with open(last_tweet_id_file, "r", encoding="utf-8") as file:
             return file.read().strip()
     except FileNotFoundError:
         return None
 
 # Function to save the last posted tweet ID to a file
 def save_last_tweet_id(tweet_id):
-    with open(last_tweet_id_file, "w") as file:
+    with open(last_tweet_id_file, "w", encoding="utf-8") as file:
         file.write(str(tweet_id))
 
 # Main function to monitor Twitter and repost on Bluesky
